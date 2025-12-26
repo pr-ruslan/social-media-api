@@ -1,3 +1,7 @@
+import os
+import uuid
+
+from django.utils.text import slugify
 from phonenumber_field.modelfields import PhoneNumberField
 from django.contrib.auth import get_user_model
 from django.db import models
@@ -9,8 +13,13 @@ from django.utils.translation import gettext_lazy as _
 User = get_user_model()
 
 
-def upload_to(instance, filename):
-    return 'user_profile_image/{}/{}'.format(instance.user_id, filename)
+def get_path(instance, filename):
+    _, extension = os.path.splitext(filename)
+    return os.path.join(
+        "user_profile_images/",
+        f"{instance.user_id}/",
+        f"{slugify(instance.instance.user_id)}-{uuid.uuid4()}{extension}"
+    )
 
 
 class Hashtag(models.Model):
@@ -104,9 +113,15 @@ class UserProfile(models.Model):
 
     user = models.OneToOneField(User, primary_key=True)
     date_of_birth = models.DateField(_('date of birth'), blank=True, null=True)
-    phone_number = PhoneNumberField(_('phone number'), blank=True)
-    gender = models.CharField(_('gender'), max_length=1, choices=GENDER_CHOICES, default=GENDER_UNKNOWN)
-    image = models.ImageField(_('image'), blank=True, null=True, upload_to=upload_to)
+    phone_number = PhoneNumberField(_('phone number'), blank=True, null=True)
+    gender = models.CharField(_('gender'),
+                              max_length=1,
+                              choices=GENDER_CHOICES,
+                              default=GENDER_UNKNOWN)
+    logo = models.ImageField(_('image'),
+                             blank=True,
+                             null=True,
+                             upload_to=get_path)
 
     def __str__(self):
         return f'{self.user.username} Profile'

@@ -1,8 +1,15 @@
-from django.conf import settings
-from django.conf.urls.static import static
-from django.urls import path
-from .views import image_upload
+from rest_framework.routers import DefaultRouter
+from django.urls import path, include
+
+from some_platform.views import UserProfileViewSet
+
+router = DefaultRouter()
+router.register(
+    r"profile",
+    UserProfileViewSet,
+    basename="profile"
+)
 
 urlpatterns = [
-    path('upload/', image_upload, name='image-upload'),  # Image upload view
+    path("/", include(router.urls)),
 ]
