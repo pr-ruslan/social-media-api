@@ -111,7 +111,9 @@ class UserProfile(models.Model):
         (GENDER_FEMALE, _('female')),
     )
 
-    user = models.OneToOneField(User, primary_key=True)
+    user = models.OneToOneField(User,
+                                primary_key=True,
+                                on_delete=models.CASCADE)
     date_of_birth = models.DateField(_('date of birth'), blank=True, null=True)
     phone_number = PhoneNumberField(_('phone number'), blank=True, null=True)
     gender = models.CharField(_('gender'),

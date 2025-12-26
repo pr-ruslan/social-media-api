@@ -43,6 +43,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return value
 
 
+
 class UserProfileLogoUploadSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile

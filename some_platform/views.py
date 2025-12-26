@@ -25,6 +25,9 @@ class UserProfileViewSet(ModelViewSet):
     def get_object(self):
         return self.request.user.userprofile
 
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
     @action(
         detail=False,
         methods=["patch", "put"],

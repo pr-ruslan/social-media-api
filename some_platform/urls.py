@@ -11,5 +11,7 @@ router.register(
 )
 
 urlpatterns = [
-    path("/", include(router.urls)),
+    path("", include(router.urls)),
 ]
+
+app_name = "some_platform"
