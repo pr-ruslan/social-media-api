@@ -1,5 +1,5 @@
 __pycache__/
-
+.idea/
 db.sqlite3
 celerybeat-schedule
 celerybeat.pid
