@@ -3,6 +3,10 @@ from django.utils.translation import gettext_lazy as _
 
 from some_platform.models import (
     UserProfile,
+    Hashtag,
+    Post,
+    Comment,
+    Like,
 )
 
 
@@ -56,3 +60,19 @@ class UserProfileLogoUploadSerializer(serializers.ModelSerializer):
                 _("Logo file size must be under 2MB.")
             )
         return value
+
+
+class HashtagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Hashtag
+        fields = ["name",]
+
+class PostSerializer(serializers.ModelSerializer):
+    author = serializers.ReadOnlyField(source="author.email")
+    class Meta:
+        model = Post
+        fields = ["title",
+                  "body",
+                  "author",
+                  "created_at",
+                  "hashtags"]
