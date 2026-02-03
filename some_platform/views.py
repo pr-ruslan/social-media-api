@@ -9,7 +9,9 @@ from rest_framework import status
 from some_platform.models import UserProfile, Post
 from some_platform.serializers import (
     UserProfileSerializer,
-    UserProfileLogoUploadSerializer, PostSerializer,
+    UserProfileLogoUploadSerializer,
+    PostSerializer,
+    CommentSerializer
 )
 from some_platform.permissions import IsAdminOrIsSelf
 from rest_framework.decorators import action
@@ -56,6 +58,16 @@ class UserProfileViewSet(ModelViewSet):
 
 class PostViewSet(ModelViewSet):
     serializer_class = PostSerializer
+
+    def get_queryset(self):
+        return Post.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class CommentViewSet(ModelViewSet):
+    serializer_class = CommentSerializer
 
     def get_queryset(self):
         return Post.objects.filter(user=self.request.user)

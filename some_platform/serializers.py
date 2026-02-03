@@ -84,3 +84,21 @@ class PostSerializer(serializers.ModelSerializer):
                   "created_at",
                   "hashtags"]
         read_only_fields = ["created_at",]
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    author = serializers.ReadOnlyField(source="author.email")
+    post = serializers.SlugRelatedField(
+        slug_field="title",
+        queryset=Post.objects.all(),
+    )
+
+    class Meta:
+        model = Comment
+        fields = ["author",
+                  "post",
+                  "body",
+                  "created_at",]
+        read_only_fields = ["created_at",]
+
+
