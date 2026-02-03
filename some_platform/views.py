@@ -6,10 +6,10 @@ from rest_framework.parsers import (
 from rest_framework.response import Response
 from rest_framework import status
 
-from some_platform.models import UserProfile
+from some_platform.models import UserProfile, Post
 from some_platform.serializers import (
     UserProfileSerializer,
-    UserProfileLogoUploadSerializer,
+    UserProfileLogoUploadSerializer, PostSerializer,
 )
 from some_platform.permissions import IsAdminOrIsSelf
 from rest_framework.decorators import action
@@ -52,3 +52,13 @@ class UserProfileViewSet(ModelViewSet):
             UserProfileSerializer(profile).data,
             status=status.HTTP_200_OK,
         )
+
+
+class PostViewSet(ModelViewSet):
+    serializer_class = PostSerializer
+
+    def get_queryset(self):
+        return Post.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

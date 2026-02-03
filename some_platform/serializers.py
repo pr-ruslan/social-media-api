@@ -67,8 +67,15 @@ class HashtagSerializer(serializers.ModelSerializer):
         model = Hashtag
         fields = ["name",]
 
+
 class PostSerializer(serializers.ModelSerializer):
     author = serializers.ReadOnlyField(source="author.email")
+    hashtags = serializers.SlugRelatedField(
+        slug_field="name",
+        queryset=Hashtag.objects.all(),
+        many=True,
+        required=False,
+    )
     class Meta:
         model = Post
         fields = ["title",
@@ -76,3 +83,4 @@ class PostSerializer(serializers.ModelSerializer):
                   "author",
                   "created_at",
                   "hashtags"]
+        read_only_fields = ["created_at",]
