@@ -18,7 +18,7 @@ def get_path(instance, filename):
     return os.path.join(
         "user_profile_images/",
         f"{instance.user_id}/",
-        f"{slugify(instance.instance.user_id)}-{uuid.uuid4()}{extension}"
+        f"{slugify(instance.user_id)}-{uuid.uuid4()}{extension}"
     )
 
 

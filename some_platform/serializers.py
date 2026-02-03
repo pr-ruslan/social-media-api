@@ -1,5 +1,7 @@
+from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
+from rest_framework.exceptions import ValidationError
 
 from some_platform.models import (
     UserProfile,
@@ -65,7 +67,7 @@ class UserProfileLogoUploadSerializer(serializers.ModelSerializer):
 class HashtagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hashtag
-        fields = ["name",]
+        fields = ["id", "name",]
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -78,27 +80,64 @@ class PostSerializer(serializers.ModelSerializer):
     )
     class Meta:
         model = Post
-        fields = ["title",
+        fields = ["id",
+                  "title",
                   "body",
                   "author",
                   "created_at",
                   "hashtags"]
-        read_only_fields = ["created_at",]
+        read_only_fields = ["id", "created_at",]
 
 
 class CommentSerializer(serializers.ModelSerializer):
     author = serializers.ReadOnlyField(source="author.email")
-    post = serializers.SlugRelatedField(
-        slug_field="title",
+    post = serializers.PrimaryKeyRelatedField(
         queryset=Post.objects.all(),
     )
 
     class Meta:
         model = Comment
-        fields = ["author",
+        fields = ["id",
+                  "author",
                   "post",
                   "body",
                   "created_at",]
-        read_only_fields = ["created_at",]
+        read_only_fields = ["id", "created_at",]
 
 
+class LikeSerializer(serializers.ModelSerializer):
+    model = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = Like
+        fields = ["id",
+                  "model",
+                  "object_id",
+                  "created_at"]
+        read_only_fields = ["id", "created_at"]
+
+    def validate(self, attrs):
+        model = attrs.pop("model")
+        object_id = attrs["object_id"]
+
+        try:
+            content_type = ContentType.objects.get(model=model)
+        except ContentType.DoesNotExist:
+            raise serializers.ValidationError("Model not found.")
+
+        attrs["content_type"] = content_type
+
+        user = self.context["request"].user
+
+        if Like.objects.filter(
+                content_type=content_type,
+                object_id=object_id,
+                user=user
+        ).exists():
+            raise ValidationError("Already liked.")
+
+        return attrs
+
+    def create(self, validated_data):
+        validated_data["user"] = self.context["request"].user
+        return super().create(validated_data)

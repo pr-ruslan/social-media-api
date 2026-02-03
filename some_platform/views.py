@@ -1,17 +1,18 @@
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.parsers import (
     FormParser,
     MultiPartParser
 )
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, generics
 
 from some_platform.models import UserProfile, Post
 from some_platform.serializers import (
     UserProfileSerializer,
     UserProfileLogoUploadSerializer,
     PostSerializer,
-    CommentSerializer
+    CommentSerializer, LikeSerializer
 )
 from some_platform.permissions import IsAdminOrIsSelf
 from rest_framework.decorators import action
@@ -74,3 +75,8 @@ class CommentViewSet(ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+
+class LikeCreateView(generics.CreateAPIView):
+    serializer_class = LikeSerializer
+    permission_classes = [IsAuthenticated]
