@@ -1,3 +1,4 @@
+from django.contrib.contenttypes.models import ContentType
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.parsers import (
@@ -7,7 +8,7 @@ from rest_framework.parsers import (
 from rest_framework.response import Response
 from rest_framework import status, generics
 
-from some_platform.models import UserProfile, Post
+from some_platform.models import UserProfile, Post, Like
 from some_platform.serializers import (
     UserProfileSerializer,
     UserProfileLogoUploadSerializer,
@@ -59,12 +60,61 @@ class UserProfileViewSet(ModelViewSet):
 
 class PostViewSet(ModelViewSet):
     serializer_class = PostSerializer
-
-    def get_queryset(self):
-        return Post.objects.filter(user=self.request.user)
+    queryset = Post.objects.all()
+    permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="like"
+    )
+    def like(self, request, pk=None):
+        post = self.get_object()
+        user = request.user
+
+        content_type = ContentType.objects.get_for_model(post)
+
+        like, created = Like.objects.get_or_create(
+            user=user,
+            content_type=content_type,
+            object_id=post.id,
+        )
+        if not created:
+            return Response(
+                {"detail": "Already liked."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {"detail": "Post liked."},
+            status=status.HTTP_201_CREATED,
+        )
+
+    @like.mapping.delete
+    def unlike(self, request, pk=None):
+        post = self.get_object()
+        user = request.user
+        content_type = ContentType.objects.get_for_model(post)
+
+        deleted, _ = Like.objects.filter(
+            user=user,
+            content_type=content_type,
+            object_id=post.id,
+        ).delete()
+
+        if deleted == 0:
+            return Response(
+                {"detail": "Not liked yet."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {"detail": "Post unliked."},
+            status=status.HTTP_204_NO_CONTENT,
+        )
 
 
 class CommentViewSet(ModelViewSet):
