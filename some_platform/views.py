@@ -17,11 +17,30 @@ from some_platform.serializers import (
 )
 from some_platform.permissions import IsAdminOrIsSelf
 from rest_framework.decorators import action
+from rest_framework.filters import SearchFilter
+from django_filters.rest_framework import DjangoFilterBackend
 
 
 class UserProfileViewSet(ModelViewSet):
     serializer_class = UserProfileSerializer
-    permission_classes = [IsAdminOrIsSelf]
+    permission_classes = [IsAuthenticated, IsAdminOrIsSelf]
+    queryset = UserProfile.objects.all().select_related("user")
+    filter_backends = [SearchFilter, DjangoFilterBackend,]
+
+    search_fields = [
+        "user__email",
+        "user__first_name",
+        "user__last_name",
+    ]
+
+    filterset_fields = ["gender"]
+
+    @action(detail=False, methods=["get",])
+    def me(self, request):
+        profile = request.user.userprofile
+        serializer = self.get_serializer(profile)
+
+        return Response(serializer.data)
 
     def get_queryset(self):
         return UserProfile.objects.filter(user=self.request.user)
