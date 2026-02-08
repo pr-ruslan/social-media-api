@@ -6,14 +6,14 @@ from rest_framework.parsers import (
     MultiPartParser
 )
 from rest_framework.response import Response
-from rest_framework import status, generics
+from rest_framework import status
 
-from some_platform.models import UserProfile, Post, Like
+from some_platform.models import UserProfile, Post, Like, Comment
 from some_platform.serializers import (
     UserProfileSerializer,
     UserProfileLogoUploadSerializer,
     PostSerializer,
-    CommentSerializer, LikeSerializer
+    CommentSerializer,
 )
 from some_platform.permissions import IsAdminOrIsSelf
 from rest_framework.decorators import action
@@ -77,14 +77,7 @@ class UserProfileViewSet(ModelViewSet):
         )
 
 
-class PostViewSet(ModelViewSet):
-    serializer_class = PostSerializer
-    queryset = Post.objects.all()
-    permission_classes = [IsAuthenticated]
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
+class LikeActionMixin:
     @action(
         detail=True,
         methods=["post"],
@@ -136,16 +129,22 @@ class PostViewSet(ModelViewSet):
         )
 
 
-class CommentViewSet(ModelViewSet):
-    serializer_class = CommentSerializer
-
-    def get_queryset(self):
-        return Post.objects.filter(user=self.request.user)
+class PostViewSet(LikeActionMixin, ModelViewSet):
+    serializer_class = PostSerializer
+    queryset = Post.objects.all()
+    permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
 
-class LikeCreateView(generics.CreateAPIView):
-    serializer_class = LikeSerializer
+class CommentViewSet(LikeActionMixin, ModelViewSet):
+    serializer_class = CommentSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Comment.objects.all()
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
