@@ -6,7 +6,7 @@ from some_platform.views import (UserProfileViewSet,
 
 router = DefaultRouter()
 router.register(
-    r"profile",
+    "profiles",
     UserProfileViewSet,
     basename="profile"
 )
