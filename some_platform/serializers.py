@@ -49,7 +49,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return value
 
 
-
 class UserProfileLogoUploadSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
@@ -68,6 +67,9 @@ class HashtagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hashtag
         fields = ["id", "name",]
+
+    def validate_name(self, value):
+        return value.lower()
 
 
 class PostSerializer(serializers.ModelSerializer):

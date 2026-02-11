@@ -29,6 +29,11 @@ class Hashtag(models.Model):
         db_index=True
     )
 
+    def save(self, *args, **kwargs):
+        if self.name:
+            self.name = self.name.lower()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"#{self.name}"
 

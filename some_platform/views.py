@@ -1,12 +1,13 @@
 from django.contrib.contenttypes.models import ContentType
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.permissions import IsAuthenticated, BasePermission, SAFE_METHODS
+from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.parsers import (
     FormParser,
     MultiPartParser
 )
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework import mixins
 
 from some_platform.models import UserProfile, Post, Like, Comment
 from some_platform.serializers import (
@@ -21,7 +22,18 @@ from rest_framework.filters import SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 
 
-class UserProfileViewSet(ModelViewSet):
+class IsAuthorOrReadOnly(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if request.method in SAFE_METHODS:
+            return True
+        return obj.author == request.user
+
+
+class UserProfileViewSet(
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    GenericViewSet
+):
     serializer_class = UserProfileSerializer
     permission_classes = [IsAuthenticated, IsAdminOrIsSelf]
     queryset = UserProfile.objects.all().select_related("user")
@@ -77,7 +89,7 @@ class UserProfileViewSet(ModelViewSet):
         )
 
 
-class LikeActionMixin:
+class LikableViewSetMixin:
     @action(
         detail=True,
         methods=["post"],
@@ -129,21 +141,31 @@ class LikeActionMixin:
         )
 
 
-class PostViewSet(LikeActionMixin, ModelViewSet):
+class PostViewSet(LikableViewSetMixin, ModelViewSet):
     serializer_class = PostSerializer
     queryset = Post.objects.all()
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAuthorOrReadOnly]
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-
-class CommentViewSet(LikeActionMixin, ModelViewSet):
-    serializer_class = CommentSerializer
-    permission_classes = [IsAuthenticated]
+        serializer.save(author=self.request.user)
 
     def get_queryset(self):
-        return Comment.objects.all()
+        return (
+            Post.objects
+            .select_related("author")
+            .prefetch_related("hashtags")
+        )
+
+
+class CommentViewSet(LikableViewSetMixin, ModelViewSet):
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticated, IsAuthorOrReadOnly]
+
+    def get_queryset(self):
+        return (
+            Comment.objects
+            .select_related("author", "post")
+        )
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

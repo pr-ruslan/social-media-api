@@ -4,16 +4,12 @@ RESTful API for a social media platform
 
 toDo-s
 
-Users should be able to follow and unfollow other users.
-Users should be able to view the list of users they are 
-    following and the list of users following them.
+comments arch,
 
 Users should be able to retrieve their own posts and posts of users they are following.
 Users should be able to retrieve posts by hashtags or other criteria.
 
-
-Users should be able to retrieve their own posts and posts of users they are following.
-Users should be able to retrieve posts by hashtags or other criteria.
+urls
 
 API Permissions:
 
