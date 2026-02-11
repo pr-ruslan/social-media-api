@@ -1,4 +1,5 @@
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated, BasePermission, SAFE_METHODS
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.parsers import (
@@ -8,8 +9,13 @@ from rest_framework.parsers import (
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import mixins
+from rest_framework.exceptions import ValidationError
 
-from some_platform.models import UserProfile, Post, Like, Comment
+from some_platform.models import (UserProfile,
+                                  Post,
+                                  Like,
+                                  Comment)
+from user.models import Follow
 from some_platform.serializers import (
     UserProfileSerializer,
     UserProfileLogoUploadSerializer,
@@ -22,16 +28,33 @@ from rest_framework.filters import SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 
 
-class IsAuthorOrReadOnly(BasePermission):
+class IsAdminOrSelfOrReadOnly(BasePermission):
+    """
+    Object-level permission:
+    - Admins have full access
+    - Users can act on their own object
+    - Read-only requests are allowed for everyone
+    """
     def has_object_permission(self, request, view, obj):
+        # Always allow safe methods
         if request.method in SAFE_METHODS:
             return True
-        return obj.author == request.user
+
+        # Admins can do anything
+        if request.user.is_staff or request.user.is_superuser:
+            return True
+
+        # Normal user can act only on their own object
+        # For UserProfile, obj.user is the owner
+        return hasattr(obj, "user") and obj.user == request.user
 
 
 class UserProfileViewSet(
+    mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin,
+    mixins.ListModelMixin,
+    mixins.DestroyModelMixin,
     GenericViewSet
 ):
     serializer_class = UserProfileSerializer
@@ -54,13 +77,9 @@ class UserProfileViewSet(
 
         return Response(serializer.data)
 
-    def get_queryset(self):
-        return UserProfile.objects.filter(user=self.request.user)
-
-    def get_object(self):
-        return self.request.user.userprofile
-
     def perform_create(self, serializer):
+        if hasattr(self.request.user, "userprofile"):
+            raise ValidationError("Profile already exists.")
         serializer.save(user=self.request.user)
 
     @action(
@@ -143,23 +162,45 @@ class LikableViewSetMixin:
 
 class PostViewSet(LikableViewSetMixin, ModelViewSet):
     serializer_class = PostSerializer
-    queryset = Post.objects.all()
-    permission_classes = [IsAuthenticated, IsAuthorOrReadOnly]
+    permission_classes = [IsAuthenticated, IsAdminOrSelfOrReadOnly]
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+
+    filterset_fields = {
+        "author": ["exact"],
+        "hashtags__name": ["exact"],
+    }
+
+    search_fields = ["title", "body"]
+
     def get_queryset(self):
-        return (
+        queryset = (
             Post.objects
             .select_related("author")
             .prefetch_related("hashtags")
         )
 
+        following = self.request.query_params.get("following")
+
+        if following == "true":
+            user = self.request.user
+
+            queryset = queryset.filter(
+                Q(author=user) |
+                Q(author__in=Follow.objects.filter(
+                    follower=user
+                ).values("following_id"))
+            )
+
+        return queryset
+
 
 class CommentViewSet(LikableViewSetMixin, ModelViewSet):
     serializer_class = CommentSerializer
-    permission_classes = [IsAuthenticated, IsAuthorOrReadOnly]
+    permission_classes = [IsAuthenticated, IsAdminOrSelfOrReadOnly]
 
     def get_queryset(self):
         return (
@@ -168,5 +209,5 @@ class CommentViewSet(LikableViewSetMixin, ModelViewSet):
         )
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(author=self.request.user)
 
