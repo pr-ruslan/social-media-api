@@ -160,6 +160,7 @@ class LikableViewSetMixin:
 
 
 class PostViewSet(LikableViewSetMixin, ModelViewSet):
+    queryset = Post.objects.all()
     serializer_class = PostSerializer
     permission_classes = [IsAuthenticated, IsAdminOrSelfOrReadOnly]
 
