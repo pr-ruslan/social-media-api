@@ -22,7 +22,6 @@ from some_platform.serializers import (
     PostSerializer,
     CommentSerializer,
 )
-from some_platform.permissions import IsAdminOrIsSelf
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
@@ -58,7 +57,7 @@ class UserProfileViewSet(
     GenericViewSet
 ):
     serializer_class = UserProfileSerializer
-    permission_classes = [IsAuthenticated, IsAdminOrIsSelf]
+    permission_classes = [IsAuthenticated, IsAdminOrSelfOrReadOnly]
     queryset = UserProfile.objects.all().select_related("user")
     filter_backends = [SearchFilter, DjangoFilterBackend,]
 
@@ -115,15 +114,15 @@ class LikableViewSetMixin:
         url_path="like"
     )
     def like(self, request, pk=None):
-        post = self.get_object()
+        obj = self.get_object()
         user = request.user
 
-        content_type = ContentType.objects.get_for_model(post)
+        content_type = ContentType.objects.get_for_model(obj)
 
         like, created = Like.objects.get_or_create(
             user=user,
             content_type=content_type,
-            object_id=post.id,
+            object_id=obj.id,
         )
         if not created:
             return Response(
@@ -138,14 +137,14 @@ class LikableViewSetMixin:
 
     @like.mapping.delete
     def unlike(self, request, pk=None):
-        post = self.get_object()
+        obj = self.get_object()
         user = request.user
-        content_type = ContentType.objects.get_for_model(post)
+        content_type = ContentType.objects.get_for_model(obj)
 
         deleted, _ = Like.objects.filter(
             user=user,
             content_type=content_type,
-            object_id=post.id,
+            object_id=obj.id,
         ).delete()
 
         if deleted == 0:
