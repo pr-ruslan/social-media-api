@@ -1,7 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
-from django.conf.urls.static import static
-from django.conf import settings
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -18,5 +17,10 @@ urlpatterns = [
 
     # api urls
     path("api/", include("user.urls")),
-    path('api/some_platform/', include("some_platform.urls", namespace="some_platform"))
+    path('api/some_platform/', include("some_platform.urls", namespace="some_platform")),
+
+    # documentation
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]

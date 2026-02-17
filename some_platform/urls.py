@@ -8,7 +8,7 @@ router = DefaultRouter()
 router.register(    "profiles", UserProfileViewSet, basename="profile")
 router.register("posts", PostViewSet)
 
-router.register("comments", CommentViewSet)
+router.register("comments", CommentViewSet, basename="comment")
 
 urlpatterns = [
     path("", include(router.urls)),

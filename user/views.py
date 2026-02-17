@@ -3,6 +3,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.viewsets import ReadOnlyModelViewSet
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 
 from user.models import CustomUser, Follow
 from user.serializers import CustomUserSerializer
@@ -10,9 +12,13 @@ from user.serializers import CustomUserSerializer
 
 class FollowActionMixin:
 
-    @action(detail=True,
-            methods=['post'])
+    @extend_schema(
+        summary="Follow user",
+        responses={201: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT},
+    )
+    @action(detail=True, methods=["post"])
     def follow(self, request, pk=None):
+
         target = self.get_object()
         follower = request.user
 
@@ -38,6 +44,10 @@ class FollowActionMixin:
              status=status.HTTP_201_CREATED
             )
 
+    @extend_schema(
+        summary="Unfollow user",
+        responses={204: None, 400: OpenApiTypes.OBJECT},
+    )
     @follow.mapping.delete
     def unfollow(self, request, pk=None):
         target = self.get_object()
@@ -62,6 +72,10 @@ class CustomUserViewSet(FollowActionMixin, ReadOnlyModelViewSet):
     serializer_class = CustomUserSerializer
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        summary="Get user's followers",
+        responses=CustomUserSerializer(many=True),
+    )
     @action(detail=True, methods=["get"])
     def followers(self, request, pk=None):
         user = self.get_object()
@@ -69,6 +83,10 @@ class CustomUserViewSet(FollowActionMixin, ReadOnlyModelViewSet):
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
 
+    @extend_schema(
+        summary="Get user's followers",
+        responses=CustomUserSerializer(many=True),
+    )
     @action(detail=True, methods=["get"])
     def following(self, request, pk=None):
         user = self.get_object()

@@ -10,6 +10,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import mixins
 from rest_framework.exceptions import ValidationError
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 
 from some_platform.models import (UserProfile,
                                   Post,
@@ -69,7 +71,11 @@ class UserProfileViewSet(
 
     filterset_fields = ["gender"]
 
-    @action(detail=False, methods=["get",])
+    @extend_schema(
+        summary="Get current user's profile",
+        responses=UserProfileSerializer,
+    )
+    @action(detail=False, methods=["get"])
     def me(self, request):
         profile = request.user.userprofile
         serializer = self.get_serializer(profile)
@@ -81,6 +87,11 @@ class UserProfileViewSet(
             raise ValidationError("Profile already exists.")
         serializer.save(user=self.request.user)
 
+    @extend_schema(
+        summary="Upload profile logo",
+        request=UserProfileLogoUploadSerializer,
+        responses=UserProfileSerializer,
+    )
     @action(
         detail=False,
         methods=["patch", "put"],
@@ -108,11 +119,14 @@ class UserProfileViewSet(
 
 
 class LikableViewSetMixin:
-    @action(
-        detail=True,
-        methods=["post"],
-        url_path="like"
+    @extend_schema(
+        summary="Like object",
+        responses={
+            201: OpenApiTypes.OBJECT,
+            400: OpenApiTypes.OBJECT,
+        },
     )
+    @action(detail=True, methods=["post"], url_path="like")
     def like(self, request, pk=None):
         obj = self.get_object()
         user = request.user
@@ -135,6 +149,10 @@ class LikableViewSetMixin:
             status=status.HTTP_201_CREATED,
         )
 
+    @extend_schema(
+        summary="Unlike object",
+        responses={204: None, 400: OpenApiTypes.OBJECT},
+    )
     @like.mapping.delete
     def unlike(self, request, pk=None):
         obj = self.get_object()
@@ -166,6 +184,19 @@ class PostViewSet(LikableViewSetMixin, ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="following",
+                type=OpenApiTypes.BOOL,
+                location=OpenApiParameter.QUERY,
+                description="Return posts from users the current user follows (true/false)",
+            ),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     filter_backends = [DjangoFilterBackend, SearchFilter]
 
