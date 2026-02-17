@@ -19,4 +19,4 @@ urlpatterns = [
     # api urls
     path("api/", include("user.urls")),
     path('api/some_platform/', include("some_platform.urls", namespace="some_platform"))
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]

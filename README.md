@@ -5,7 +5,7 @@ RESTful API for a social media platform
 toDo-s
 
 
-- r@moutes
+- routes
 
 API Documentation:
 
