@@ -1,8 +1,8 @@
 __pycache__/
 .idea/
-db.sqlite3
 celerybeat-schedule
 celerybeat.pid
-.env
+# .env
 .venv
 venv/
+.idea
