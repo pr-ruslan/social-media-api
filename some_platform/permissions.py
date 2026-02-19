@@ -1,14 +1,22 @@
-from rest_framework import permissions
+from rest_framework.permissions import SAFE_METHODS, BasePermission
 
-class IsAdminOrIsSelf(permissions.BasePermission):
+
+class IsAdminOrSelfOrReadOnly(BasePermission):
     """
-    Custom permission to only allow admins or the owner of the profile to edit/view it.
+    Object-level permission:
+    - Admins have full access
+    - Users can act on their own object
+    - Read-only requests are allowed for everyone
     """
     def has_object_permission(self, request, view, obj):
-        # 1. Allow if the user is an admin/staff
-        if request.user and request.user.is_staff:
+        # Always allow safe methods
+        if request.method in SAFE_METHODS:
             return True
 
-        # 2. Allow if the object being accessed belongs to the current user
-        # 'obj' is the Profile instance, so we check obj.user
-        return obj.user == request.user
+        # Admins can do anything
+        if request.user.is_staff or request.user.is_superuser:
+            return True
+
+        # Normal user can act only on their own object
+        # For UserProfile, obj.user is the owner
+        return hasattr(obj, "user") and obj.user == request.user
