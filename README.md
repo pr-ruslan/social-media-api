@@ -2,6 +2,39 @@
 RESTful backend API for a social media platform built with Django and Django REST Framework.
 Supports user authentication (JWT), profiles, posts, comments, likes, and follow relationships.
 
+## 📥 Installation (From GitHub)
+
+### 1. Clone the repository and install requirements
+
+``` bash
+git clone https://github.com/pr-ruslan/social-media-api.git
+cd train-station-API
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+```
+
+### 2. If you run app manually
+Edit your db settings in settings.py
+
+Migrate and run application:
+
+``` bash
+python manage.py migrate
+python manage.py runserver
+```
+
+### 3. Start the project with Docker
+
+``` bash
+docker-compose up --build
+```
+
+The API will be available at:\
+👉 **http://localhost:8000**
+
+
 ### Authentication
 
 -   JWT-based authentication
